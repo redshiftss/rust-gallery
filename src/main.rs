@@ -65,36 +65,3 @@ async fn upload_image(access_key: &str, secret_key: &str, bucket_name: &str, fil
 
     Ok(())
 }
-
-//
-// #[tokio::main]
-// async fn main() -> (){
-//     let i = Image::new("./wooloo.png").expect("Invalid path!");
-//
-//     let creds = Credentials::from_keys("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", None);
-//     let endpoint = Endpoint::immutable(Uri::from_static("http://127.0.0.1:9000"));
-//
-//     let shared_config = aws_config::from_env().endpoint_resolver(endpoint).credentials_provider(creds).region(Region::new("us-west-2")).load().await;
-//     let client = aws_sdk_s3::Client::new(&shared_config);
-//
-//     upload_image(&client, "http://127.0.0.1:9000/rustgallery","wooloo","./wooloo.png").await;
-// }
-//
-// async fn upload_image(client: &Client, bucket: &str, key: &str, img: &str) -> Result<(), Error> {
-//     let body = ByteStream::from_path(img).await;
-//     match body {
-//         Ok(b) => {
-//             let resp = client
-//                 .put_object()
-//                 .bucket(bucket)
-//                 .key(key)
-//                 .body(b)
-//                 .send()
-//                 .await.expect("Error occurred");
-//         }
-//         Err(e) => {
-//             println!("Error encountered: {}", e);
-//         }
-//     }
-//     Ok(())
-// }
