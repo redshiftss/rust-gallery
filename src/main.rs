@@ -1,5 +1,6 @@
-extern crate s3;
+mod api;
 
+extern crate s3;
 use std::fs::File;
 use image::{DynamicImage, ImageError, open};
 use std::{io, str};
@@ -8,6 +9,7 @@ use s3::bucket::Bucket;
 use s3::creds::Credentials;
 use s3::region::Region;
 use anyhow::Result;
+
 
 struct Storage {
     name: String,
@@ -34,17 +36,17 @@ impl Image {
     }
 }
 
-// struct BinaryImage {
-//     bytes: Vec<u8>
-// }
-//
-// impl From<Image> for BinaryImage{
-//     fn from(_: Image) -> Self {
-//         Self{
-//             bytes:
-//         }
-//     }
-// }
+struct BinaryImage {
+    bytes: Vec<u8>
+}
+
+impl From<Image> for BinaryImage{
+    fn from(_: Image) -> Self {
+        Self{
+            bytes:
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {

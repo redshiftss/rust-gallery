@@ -17,6 +17,8 @@ aws-smithy-http = "0.39.0"
 http = "0.2.6"
 rust-s3 = {version="0.28.0", features=["default"]}
 anyhow = "1.0.56"
+axum = "0.5.1"
+tera = "1.15.0"
 
 [[bin]]
 name = "rust-gallery"
