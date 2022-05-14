@@ -1,120 +1,52 @@
-mod api;
+mod img;
+use std::env;
 
-extern crate s3;
-use std::fs::File;
-use image::{DynamicImage, ImageError, open};
-use std::{io, str};
-use std::io::{Read, Write};
-use s3::bucket::Bucket;
-use s3::creds::Credentials;
-use s3::region::Region;
-use anyhow::Result;
+use axum::{
+    routing::post, 
+    extract::Multipart,
+    Router, Extension
+};
 
-
-struct Storage {
-    name: String,
-    region: Region,
-    credentials: Credentials,
-    bucket: String,
-    location_supported: bool,
-}
-
-#[derive(Debug)]
-struct Image {
-    bytes: Vec<u8>
-}
-
-impl Image {
-    fn new(name : &str) -> Result<Self, io::Error>{
-        let mut v = Vec::new();
-        let mut i = File::open(name)?;
-        i.read_to_end(&mut v)?;
-
-        Ok(Self{
-            bytes: v
-        })
-    }
-}
-
-struct BinaryImage {
-    bytes: Vec<u8>
-}
-
-impl From<Image> for BinaryImage{
-    fn from(_: Image) -> Self {
-        Self{
-            bytes:
-        }
-    }
-}
+use crate::img::{Image, upload_image};
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    let i = Image::new("./wooloo.png").expect("Invalid path!");
+async fn main() {
+    let args: Vec<String> = env::args().collect();
 
-    upload_image(
-        "AKIAIOSFODNN7EXAMPLE",
-        "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "rustgallery",
-        "wooloo",
-        &i
-    ).await?;
+    let app = Router::new()
+                        .route("/upload", post(upload))
+                        .layer(&Extension(args));
 
-    let data = download_image(        "AKIAIOSFODNN7EXAMPLE",
-                                      "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                                      "rustgallery",
-                                      "wooloo").await?;
-    println!("{:?}", data);
-    let mut buffer = File::create("foo.png")?;
-    buffer.write(&data)?;
+    // run it with hyper on localhost:2000
+    axum::Server::bind(&"0.0.0.0:2000".parse().unwrap())
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 
-    Ok(())
 }
 
-async fn upload_image(access_key: &str, secret_key: &str, bucket_name: &str, key: &str, file: &Image) -> Result<()> {
-    let minio = Storage {
-        name: "minio".into(),
-        region: Region::Custom {
-            region: "".into(),
-            endpoint: "http://127.0.0.1:9000".into(),
-        },
-        credentials: Credentials {
-            access_key: Some(access_key.to_owned()),
-            secret_key: Some(secret_key.to_owned()),
-            security_token: None,
-            session_token: None,
-        },
-        bucket: bucket_name.to_string(),
-        location_supported: false,
-    };
+async fn upload(mut picture_data: Multipart, Extension(args): Extension<Vec<String>>) {
+    while let Some(field) = picture_data.next_field().await.unwrap() {
+        let name = field.name().unwrap().to_string();
+        let data = field.bytes().await.unwrap();
 
-    let bucket = Bucket::new_with_path_style(&minio.bucket, minio.region, minio.credentials)?;
-    let (_, code) = bucket.put_object(key, &file.bytes).await?;
-    assert_eq!(200, code);
+        println!("field name: {:?}", name);
 
-    Ok(())
-}
+        match &*name {
+            "picture" => {
+                let img = Image::new_from_bytes(data.to_vec());
+                upload_image(
+                    &args[1],
+                    &args[2],
+                    "rustgallery",
+                    "image",
+                    &img
+                ).await;
+            },
+            "visibility" => {
 
-async fn download_image(access_key: &str, secret_key: &str, bucket_name: &str, key: &str) -> Result<Vec<u8>> {
-    let minio = Storage {
-        name: "minio".into(),
-        region: Region::Custom {
-            region: "".into(),
-            endpoint: "http://127.0.0.1:9000".into(),
-        },
-        credentials: Credentials {
-            access_key: Some(access_key.to_owned()),
-            secret_key: Some(secret_key.to_owned()),
-            security_token: None,
-            session_token: None,
-        },
-        bucket: bucket_name.to_string(),
-        location_supported: false,
-    };
-
-    let bucket = Bucket::new_with_path_style(&minio.bucket, minio.region, minio.credentials)?;
-    let (data, code) = bucket.get_object(key).await?;
-    assert_eq!(200, code);
-
-    Ok(data)
-}
+            },
+            _ => ()
+        }
+    }
+}   
